@@ -6,6 +6,23 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
+  <!-- Windows-only features requiring RegionCapture UI types -->
+  <PropertyGroup Condition="$(TargetFramework.Contains('windows'))">
+    <DefineConstants>$(DefineConstants);WINDOWS</DefineConstants>
+  </PropertyGroup>
+  <!-- Exclude Windows-only files on non-Windows platforms (these depend on RegionCapture UI types) -->
+  <ItemGroup Condition="!$(TargetFramework.Contains('windows'))">
+    <Compile Remove="ViewModels\MonitorTestViewModel.cs" />
+    <Compile Remove="Views\MonitorTestWindow.axaml.cs" />
+    <Compile Remove="Services\MonitorTestToolService.cs" />
+    <Compile Remove="Services\RulerToolService.cs" />
+    <Compile Remove="Services\ColorPickerToolService.cs" />
+    <Compile Remove="ViewModels\ScrollingCaptureViewModel.cs" />
+    <Compile Remove="Views\ScrollingCaptureWindow.axaml.cs" />
+    <Compile Remove="Services\ScrollingCaptureToolService.cs" />
+    <AvaloniaXaml Remove="Views\MonitorTestWindow.axaml" />
+    <AvaloniaXaml Remove="Views\ScrollingCaptureWindow.axaml" />
+  </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Avalonia" Version="11.3.9" />
     <PackageReference Include="Avalonia.Controls.ColorPicker" Version="11.3.9" />

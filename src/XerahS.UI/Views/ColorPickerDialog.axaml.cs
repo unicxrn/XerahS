@@ -44,6 +44,7 @@ public partial class ColorPickerDialog : Window
 
     public async Task<PointInfo?> PickFromScreenAsync()
     {
+#if WINDOWS
         bool wasVisible = IsVisible;
         var previousState = WindowState;
 
@@ -59,5 +60,9 @@ public partial class ColorPickerDialog : Window
         }
 
         return result;
+#else
+        await Task.CompletedTask;
+        return null;
+#endif
     }
 }

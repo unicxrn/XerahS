@@ -6,6 +6,7 @@
              xmlns:vm="using:XerahS.UI.ViewModels"
              xmlns:views="using:XerahS.UI.Views.Controls"
              xmlns:controls="using:XerahS.UI.Controls"
+             xmlns:converters="using:XerahS.UI.Converters"
              x:Class="XerahS.UI.Views.ApplicationSettingsView"
              x:DataType="vm:SettingsViewModel">
 
@@ -445,6 +446,39 @@
                             </Border>
                         </StackPanel>
                         
+                        <!-- Linux Region Selector (visible only on Linux) -->
+                        <StackPanel Spacing="8" IsVisible="{Binding IsLinux}">
+                            <TextBlock Text="Linux Region Selector" FontWeight="SemiBold"/>
+                            <Border BorderThickness="1"
+                                    BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+                                    Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+                                    CornerRadius="4" Padding="16">
+                                <StackPanel Spacing="12">
+                                    <TextBlock Text="Choose which tool to use for interactive region selection (screenshots and recordings)."
+                                               TextWrapping="Wrap"
+                                               Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"/>
+                                    <Grid ColumnDefinitions="Auto, 16, *" RowDefinitions="Auto">
+                                        <TextBlock Grid.Column="0" Text="Region selector:" VerticalAlignment="Center"/>
+                                        <ComboBox Grid.Column="2"
+                                                  ItemsSource="{Binding AvailableLinuxRegionSelectors}"
+                                                  SelectedItem="{Binding LinuxRegionSelector}"
+                                                  HorizontalAlignment="Left" Width="250"
+                                                  AutomationProperties.Name="Linux Region Selector">
+                                            <ComboBox.ItemTemplate>
+                                                <DataTemplate>
+                                                    <TextBlock Text="{Binding Converter={x:Static converters:EnumToDescriptionConverter.Instance}}"/>
+                                                </DataTemplate>
+                                            </ComboBox.ItemTemplate>
+                                        </ComboBox>
+                                    </Grid>
+                                    <TextBlock Text="{Binding LinuxDetectedToolsText}"
+                                               FontSize="12"
+                                               Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"
+                                               TextWrapping="Wrap"/>
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+
                         <StackPanel Spacing="8">
                             <TextBlock Text="Application Configuration" FontWeight="SemiBold"/>
                             <Border BorderThickness="1"

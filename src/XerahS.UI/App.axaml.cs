@@ -230,10 +230,12 @@ public partial class App : Application
                     {
                         await OcrToolService.HandleWorkflowAsync(workflowType, owner);
                     }
+#if WINDOWS
                     else if (workflowType == WorkflowType.ScrollingCapture)
                     {
                         await ScrollingCaptureToolService.HandleWorkflowAsync(workflowType, owner);
                     }
+#endif
                     else if (workflowType == WorkflowType.ImageEditor)
                     {
                         await OpenImageEditorAsync(owner);
@@ -250,6 +252,7 @@ public partial class App : Application
                     {
                         await PinToScreenToolService.HandleWorkflowAsync(workflowType, owner);
                     }
+#if WINDOWS
                     else if (workflowType == WorkflowType.MonitorTest)
                     {
                         await MonitorTestToolService.HandleWorkflowAsync(workflowType, owner);
@@ -258,6 +261,7 @@ public partial class App : Application
                     {
                         await RulerToolService.HandleWorkflowAsync(workflowType, owner);
                     }
+#endif
                     else if (workflowType is WorkflowType.AutoCapture
                         or WorkflowType.StartAutoCapture
                         or WorkflowType.StopAutoCapture)

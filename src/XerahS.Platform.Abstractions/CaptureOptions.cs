@@ -65,5 +65,11 @@ namespace XerahS.Platform.Abstractions
         /// Cancellation token used during capture start delay.
         /// </summary>
         public CancellationToken CaptureStartDelayCancellationToken { get; set; } = CancellationToken.None;
+
+        /// <summary>
+        /// Preferred region selector tool name on Linux (e.g., "auto", "portal", "slurp", "spectacle").
+        /// Ignored on non-Linux platforms.
+        /// </summary>
+        public string? LinuxRegionSelectorHint { get; set; }
     }
 }

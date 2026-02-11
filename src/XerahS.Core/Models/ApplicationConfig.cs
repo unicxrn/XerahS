@@ -266,6 +266,9 @@ public class ApplicationConfig : SettingsBase<ApplicationConfig>
     [Category("Paths"), Description("Secondary custom screenshots path.")]
     public string CustomScreenshotsPath2 { get; set; } = "";
 
+    [Category("Linux"), DefaultValue(LinuxRegionSelector.Auto), Description("Preferred region selection tool on Linux. 'Automatic' uses the best available method.")]
+    public LinuxRegionSelector LinuxRegionSelector { get; set; } = LinuxRegionSelector.Auto;
+
     [Category("Drag and drop window"), DefaultValue(150), Description("Drop window size.")]
     public int DropSize { get; set; }
 

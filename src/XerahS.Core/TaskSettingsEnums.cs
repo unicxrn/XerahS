@@ -168,6 +168,22 @@ public enum AIProvider
     Custom
 }
 
+public enum LinuxRegionSelector
+{
+    [Description("Automatic (recommended)")]
+    Auto,
+    [Description("XDG Desktop Portal")]
+    Portal,
+    [Description("slurp")]
+    Slurp,
+    [Description("spectacle (KDE)")]
+    Spectacle,
+    [Description("gnome-screenshot")]
+    GnomeScreenshot,
+    [Description("xfce4-screenshooter")]
+    Xfce4Screenshooter
+}
+
 public enum Orientation
 {
     Horizontal,

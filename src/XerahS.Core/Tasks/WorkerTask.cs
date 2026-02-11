@@ -241,7 +241,8 @@ namespace XerahS.Core.Tasks
                     CaptureShadow = captureSettings.CaptureShadow,
                     CaptureClientArea = captureSettings.CaptureClientArea,
                     WorkflowId = taskSettings.WorkflowId,
-                    WorkflowCategory = workflowCategory
+                    WorkflowCategory = workflowCategory,
+                    LinuxRegionSelectorHint = SettingsManager.Settings.LinuxRegionSelector.ToString().ToLowerInvariant()
                 };
 
                 switch (taskSettings.Job)
@@ -517,7 +518,8 @@ namespace XerahS.Core.Tasks
                         {
                             UseModernCapture = Info.TaskSettings.CaptureSettings.UseModernCapture,
                             ShowCursor = Info.TaskSettings.CaptureSettings.ShowCursor,
-                            WorkflowId = Info.TaskSettings.WorkflowId
+                            WorkflowId = Info.TaskSettings.WorkflowId,
+                            LinuxRegionSelectorHint = SettingsManager.Settings.LinuxRegionSelector.ToString().ToLowerInvariant()
                         };
 
                         SKRectI selection;
@@ -526,19 +528,36 @@ namespace XerahS.Core.Tasks
 
                         if (isLinuxWayland)
                         {
-                            TroubleshootingHelper.Log(Info.TaskSettings.Job.ToString(), "WORKER_TASK", "Linux Wayland: Trying slurp for region selection");
-                            var slurpResult = await SelectRegionWithSlurpAsync();
-                            selection = slurpResult.Region;
+                            var regionPref = SettingsManager.Settings.LinuxRegionSelector;
+                            TroubleshootingHelper.Log(Info.TaskSettings.Job.ToString(), "WORKER_TASK", $"Linux Wayland: Region selector preference: {regionPref}");
 
-                            if (slurpResult.WasCancelled)
+                            if (regionPref == LinuxRegionSelector.Slurp)
                             {
-                                TroubleshootingHelper.Log(Info.TaskSettings.Job.ToString(), "WORKER_TASK", "Linux Wayland: slurp cancelled by user");
+                                // User explicitly chose slurp - use it without fallback
+                                var slurpResult = await SelectRegionWithSlurpAsync();
+                                selection = slurpResult.Region;
                             }
-                            // Keep compatibility across DE/WM setups where slurp is missing or unavailable.
-                            else if (selection.IsEmpty || selection.Width <= 0 || selection.Height <= 0)
+                            else if (regionPref == LinuxRegionSelector.Portal)
                             {
-                                TroubleshootingHelper.Log(Info.TaskSettings.Job.ToString(), "WORKER_TASK", "Linux Wayland: slurp unavailable/failed, falling back to in-app region selector");
+                                // User chose Portal - use platform service (which uses portal)
                                 selection = await PlatformServices.ScreenCapture.SelectRegionAsync(regionCaptureOptions);
+                            }
+                            else
+                            {
+                                // Auto or any tool that doesn't provide coordinates: try slurp first, fallback to platform
+                                TroubleshootingHelper.Log(Info.TaskSettings.Job.ToString(), "WORKER_TASK", "Linux Wayland: Trying slurp for region selection");
+                                var slurpResult = await SelectRegionWithSlurpAsync();
+                                selection = slurpResult.Region;
+
+                                if (slurpResult.WasCancelled)
+                                {
+                                    TroubleshootingHelper.Log(Info.TaskSettings.Job.ToString(), "WORKER_TASK", "Linux Wayland: slurp cancelled by user");
+                                }
+                                else if (selection.IsEmpty || selection.Width <= 0 || selection.Height <= 0)
+                                {
+                                    TroubleshootingHelper.Log(Info.TaskSettings.Job.ToString(), "WORKER_TASK", "Linux Wayland: slurp unavailable/failed, falling back to in-app region selector");
+                                    selection = await PlatformServices.ScreenCapture.SelectRegionAsync(regionCaptureOptions);
+                                }
                             }
                         }
                         else

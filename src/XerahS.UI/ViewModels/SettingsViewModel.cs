@@ -25,6 +25,7 @@
 
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.Linq;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -292,6 +293,24 @@ namespace XerahS.UI.ViewModels
 
         [ObservableProperty]
         private bool _supportsFileAssociations;
+
+        // Linux Region Selector
+        public bool IsLinux => OperatingSystem.IsLinux();
+
+        [ObservableProperty]
+        private LinuxRegionSelector _linuxRegionSelector;
+
+        [ObservableProperty]
+        private List<LinuxRegionSelector> _availableLinuxRegionSelectors = new();
+
+        [ObservableProperty]
+        private string _linuxDetectedToolsText = string.Empty;
+
+        partial void OnLinuxRegionSelectorChanged(LinuxRegionSelector value)
+        {
+            if (_isLoading) return;
+            SettingsManager.Settings.LinuxRegionSelector = value;
+        }
 
         partial void OnIsPluginExtensionRegisteredChanged(bool value)
         {
@@ -638,6 +657,17 @@ namespace XerahS.UI.ViewModels
                 // Shell integration not available on this platform
                 IsPluginExtensionRegistered = false;
             }
+
+            // Linux Region Selector
+            if (OperatingSystem.IsLinux())
+            {
+                LinuxRegionSelector = settings.LinuxRegionSelector;
+                AvailableLinuxRegionSelectors = DetectLinuxRegionSelectors();
+                var detected = AvailableLinuxRegionSelectors
+                    .Where(s => s != LinuxRegionSelector.Auto)
+                    .Select(s => EnumExtensions.GetDescription(s));
+                LinuxDetectedToolsText = $"Detected: {string.Join(", ", detected)}";
+            }
         }
 
         protected override void OnPropertyChanged(System.ComponentModel.PropertyChangedEventArgs e)
@@ -891,6 +921,51 @@ namespace XerahS.UI.ViewModels
             }
 
             return EnumExtensions.GetDescription(workflow.Job);
+        }
+
+        private static List<LinuxRegionSelector> DetectLinuxRegionSelectors()
+        {
+            var available = new List<LinuxRegionSelector> { LinuxRegionSelector.Auto, LinuxRegionSelector.Portal };
+
+            var toolMap = new (LinuxRegionSelector selector, string toolName)[]
+            {
+                (LinuxRegionSelector.Slurp, "slurp"),
+                (LinuxRegionSelector.Spectacle, "spectacle"),
+                (LinuxRegionSelector.GnomeScreenshot, "gnome-screenshot"),
+                (LinuxRegionSelector.Xfce4Screenshooter, "xfce4-screenshooter"),
+            };
+
+            foreach (var (selector, toolName) in toolMap)
+            {
+                if (IsToolInstalled(toolName))
+                {
+                    available.Add(selector);
+                }
+            }
+
+            return available;
+        }
+
+        private static bool IsToolInstalled(string toolName)
+        {
+            try
+            {
+                var startInfo = new ProcessStartInfo
+                {
+                    FileName = "which",
+                    Arguments = toolName,
+                    CreateNoWindow = true,
+                    UseShellExecute = false,
+                    RedirectStandardOutput = true
+                };
+                using var process = Process.Start(startInfo);
+                process?.WaitForExit(3000);
+                return process?.ExitCode == 0;
+            }
+            catch
+            {
+                return false;
+            }
         }
 
         private void ApplyProxyAndResetClient()

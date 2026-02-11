@@ -5,5 +5,9 @@
     <Authors>ShareX Team</Authors>
     <Company>ShareX Team</Company>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <!-- Enable Windows targeting packs on non-Windows (needed for multi-TFM restore) -->
+    <EnableWindowsTargeting Condition="'$(OS)' != 'Windows_NT'">true</EnableWindowsTargeting>
+    <!-- Set RuntimeIdentifier on Linux so conditional TFMs resolve correctly -->
+    <RuntimeIdentifier Condition="$([MSBuild]::IsOSPlatform('Linux')) And '$(RuntimeIdentifier)' == ''">linux-x64</RuntimeIdentifier>
   </PropertyGroup>
 </Project>

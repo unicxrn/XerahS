@@ -55,12 +55,14 @@ public static class ToolNavigationHelper
             case "Tools_IndexFolder":
                 ShowIndexFolderWindow(owner);
                 return true;
+#if WINDOWS
             case "Tools_ColorPicker":
                 _ = ColorPickerToolService.HandleWorkflowAsync(WorkflowType.ColorPicker, owner);
                 return true;
             case "Tools_ScreenColorPicker":
                 _ = ColorPickerToolService.HandleWorkflowAsync(WorkflowType.ScreenColorPicker, owner);
                 return true;
+#endif
             case "Tools_QrGenerator":
                 _ = QrCodeToolService.HandleWorkflowAsync(WorkflowType.QRCode, owner);
                 return true;
@@ -88,9 +90,11 @@ public static class ToolNavigationHelper
             case "Tools_AnalyzeImage":
                 _ = MediaToolsToolService.HandleWorkflowAsync(WorkflowType.AnalyzeImage, owner);
                 return true;
+#if WINDOWS
             case "Tools_Ruler":
                 _ = RulerToolService.HandleWorkflowAsync(WorkflowType.Ruler, owner);
                 return true;
+#endif
             case "Tools_PinToScreenFromScreen":
                 _ = executeWorkflowFromNavigationAsync(WorkflowType.PinToScreenFromScreen);
                 return true;
@@ -112,9 +116,11 @@ public static class ToolNavigationHelper
             case "Tools_ClipboardViewer":
                 _ = executeWorkflowFromNavigationAsync(WorkflowType.ClipboardViewer);
                 return true;
+#if WINDOWS
             case "Tools_MonitorTest":
                 _ = MonitorTestToolService.HandleWorkflowAsync(WorkflowType.MonitorTest, owner);
                 return true;
+#endif
             default:
                 return false;
         }

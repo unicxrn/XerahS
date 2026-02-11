@@ -57,6 +57,22 @@ namespace XerahS.Platform.Linux
             // On Wayland we prefer native selector tools; on X11 the UI overlay remains the primary path.
             if (IsWayland)
             {
+                var hint = options?.LinuxRegionSelectorHint;
+
+                // If user explicitly chose slurp, use it directly
+                if (string.Equals(hint, "slurp", StringComparison.OrdinalIgnoreCase))
+                {
+                    return SelectRegionWithSlurpAsync();
+                }
+
+                // If user chose portal, return empty to let the caller use the UI selector
+                if (string.Equals(hint, "portal", StringComparison.OrdinalIgnoreCase))
+                {
+                    DebugHelper.WriteLine("LinuxScreenCaptureService: SelectRegionAsync - Portal selected, deferring to UI region selector.");
+                    return Task.FromResult(SKRectI.Empty);
+                }
+
+                // Auto or unset: try slurp if available
                 if (IsSlurpAvailable())
                 {
                     return SelectRegionWithSlurpAsync();
@@ -113,11 +129,24 @@ namespace XerahS.Platform.Linux
 
             SKBitmap? result;
             var currentDesktop = GetCurrentDesktop();
-            DebugHelper.WriteLine($"LinuxScreenCaptureService: Detected desktop environment: {currentDesktop ?? "unknown"}, Wayland: {IsWayland}");
+            var hint = options?.LinuxRegionSelectorHint;
+            DebugHelper.WriteLine($"LinuxScreenCaptureService: Detected desktop environment: {currentDesktop ?? "unknown"}, Wayland: {IsWayland}, RegionSelector: {hint ?? "auto"}");
 
             if (IsWayland)
             {
-                // On Wayland, try XDG Portal first - it's the standard cross-DE method
+                // If the user selected a specific tool, try it first
+                if (!string.IsNullOrEmpty(hint) && !string.Equals(hint, "auto", StringComparison.OrdinalIgnoreCase))
+                {
+                    result = await TryCaptureWithPreferredToolAsync(hint, currentDesktop);
+                    if (result != null)
+                    {
+                        return result;
+                    }
+
+                    DebugHelper.WriteLine($"LinuxScreenCaptureService: Preferred tool '{hint}' failed, falling back to auto behavior");
+                }
+
+                // Auto behavior: try XDG Portal first - it's the standard cross-DE method
                 DebugHelper.WriteLine("LinuxScreenCaptureService: Trying XDG Portal for interactive region capture");
                 var (portalResult, portalResponse) = await CaptureWithPortalDetailedAsync(forceInteractive: true).ConfigureAwait(false);
                 if (portalResult != null)
@@ -152,7 +181,19 @@ namespace XerahS.Platform.Linux
                 return null;
             }
 
-            // X11 path: Try DE-native tools first based on detected desktop
+            // X11 path: If user selected a specific tool, try it first
+            if (!string.IsNullOrEmpty(hint) && !string.Equals(hint, "auto", StringComparison.OrdinalIgnoreCase))
+            {
+                result = await TryCaptureWithPreferredToolAsync(hint, currentDesktop);
+                if (result != null)
+                {
+                    return result;
+                }
+
+                DebugHelper.WriteLine($"LinuxScreenCaptureService: Preferred tool '{hint}' failed on X11, falling back to auto behavior");
+            }
+
+            // X11 auto path: Try DE-native tools first based on detected desktop
             result = await TryCaptureWithDesktopNativeToolAsync(currentDesktop);
             if (result != null)
             {
@@ -282,6 +323,40 @@ namespace XerahS.Platform.Linux
             }
 
             return null;
+        }
+
+        /// <summary>
+        /// Try the user's preferred region capture tool.
+        /// </summary>
+        private async Task<SKBitmap?> TryCaptureWithPreferredToolAsync(string hint, string? currentDesktop)
+        {
+            switch (hint.ToLowerInvariant())
+            {
+                case "portal":
+                    DebugHelper.WriteLine("LinuxScreenCaptureService: Using preferred tool: XDG Portal");
+                    var (portalResult, _) = await CaptureWithPortalDetailedAsync(forceInteractive: true).ConfigureAwait(false);
+                    return portalResult;
+
+                case "slurp":
+                    DebugHelper.WriteLine("LinuxScreenCaptureService: Using preferred tool: grim+slurp");
+                    return await CaptureWithGrimSlurpAsync();
+
+                case "spectacle":
+                    DebugHelper.WriteLine("LinuxScreenCaptureService: Using preferred tool: spectacle");
+                    return await CaptureWithToolInteractiveAsync("spectacle", "-b -n -r -o");
+
+                case "gnomescreenshot":
+                    DebugHelper.WriteLine("LinuxScreenCaptureService: Using preferred tool: gnome-screenshot");
+                    return await CaptureWithToolInteractiveAsync("gnome-screenshot", "-a -f");
+
+                case "xfce4screenshooter":
+                    DebugHelper.WriteLine("LinuxScreenCaptureService: Using preferred tool: xfce4-screenshooter");
+                    return await CaptureWithToolInteractiveAsync("xfce4-screenshooter", "-r -s");
+
+                default:
+                    DebugHelper.WriteLine($"LinuxScreenCaptureService: Unknown region selector hint: '{hint}'");
+                    return null;
+            }
         }
 
         public async Task<SKBitmap?> CaptureRectAsync(SKRect rect, CaptureOptions? options = null)

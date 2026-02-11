@@ -28,7 +28,9 @@ using XerahS.Common;
 using XerahS.Core;
 using XerahS.Core.Helpers;
 using XerahS.Platform.Abstractions;
+#if WINDOWS
 using XerahS.RegionCapture;
+#endif
 using SkiaSharp;
 using System;
 using System.Diagnostics;
@@ -69,6 +71,7 @@ namespace XerahS.UI.Services
                 }
             }
 
+#if WINDOWS
             SKRectI selection = SKRectI.Empty;
 
             try
@@ -123,6 +126,10 @@ namespace XerahS.UI.Services
             }
 
             return selection;
+#else
+            // Non-Windows: delegate to platform implementation
+            return await _platformImpl.SelectRegionAsync(options);
+#endif
         }
 
         public async Task<SKBitmap?> CaptureFullScreenAsync(CaptureOptions? options = null)
@@ -154,6 +161,10 @@ namespace XerahS.UI.Services
 
         public async Task<SKBitmap?> CaptureRegionAsync(CaptureOptions? options = null)
         {
+#if !WINDOWS
+            // Non-Windows: delegate entirely to platform implementation
+            return await _platformImpl.CaptureRegionAsync(options);
+#else
             if (IsLinuxWayland())
             {
                 // Wayland compositors can misbehave with the in-app overlay. Delegate to platform-native
@@ -379,6 +390,7 @@ namespace XerahS.UI.Services
             }
 
             return bitmap;
+#endif
         }
 
         public Task<SKBitmap?> CaptureWindowAsync(IntPtr windowHandle, IWindowService windowService, CaptureOptions? options = null)
